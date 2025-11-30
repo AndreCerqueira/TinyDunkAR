@@ -1,4 +1,5 @@
 using System.Collections;
+using MoreMountains.Feedbacks;
 using Project.Runtime.Slider;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -19,6 +20,9 @@ namespace Project.Runtime
         [Header("Physics Settings")]
         [SerializeField] private float _gravityValue = 3.0f;
         [SerializeField] private float _respawnDelay = 2f;
+        
+        [Header("Feedbacks")]
+        [SerializeField] private MMF_Player _trowFeedbacks;
 
         private Rigidbody _rb;
         private Camera _mainCamera;
@@ -135,6 +139,7 @@ namespace Project.Runtime
             _isCharging = false;
             _isLaunched = true;
             _pressAction.Disable();
+            _trowFeedbacks?.PlayFeedbacks();
 
             if (_powerSlider != null)
                 _powerSlider.SetVisible(false);
