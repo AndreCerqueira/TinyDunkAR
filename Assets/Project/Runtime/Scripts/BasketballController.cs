@@ -1,4 +1,5 @@
 using System.Collections;
+using Project.Runtime.Slider;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -21,6 +22,7 @@ namespace Project.Runtime
 
         private Rigidbody _rb;
         private Camera _mainCamera;
+        private PowerSliderController _powerSlider;
         private Vector3 _initialLocalPosition;
         private Quaternion _initialLocalRotation;
         
@@ -37,6 +39,7 @@ namespace Project.Runtime
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
+            _powerSlider = PowerSliderController.Instance;
             _mainCamera = Camera.main;
 
             _initialLocalPosition = transform.localPosition;
@@ -67,7 +70,16 @@ namespace Project.Runtime
             if (_isCharging)
             {
                 _currentChargeTime += Time.deltaTime;
+                UpdateSliderVisuals();
             }
+        }
+
+        private void UpdateSliderVisuals()
+        {
+            if (_powerSlider == null) return;
+            
+            var ratio = Mathf.Clamp01(_currentChargeTime / _maxChargeTime);
+            _powerSlider.UpdateProgress(ratio);
         }
 
         private void OnEnable()
@@ -106,20 +118,26 @@ namespace Project.Runtime
             {
                 if (hit.transform == transform)
                 {
-                    Debug.Log("Toque detetado na bola! A carregar...");
                     _isCharging = true;
                     _currentChargeTime = 0f;
+                    
+                    if (_powerSlider != null)
+                    {
+                        _powerSlider.SetVisible(true);
+                        _powerSlider.UpdateProgress(0f);
+                    }
                 }
             }
         }
 
         private void PerformPhysicsThrow()
         {
-            Debug.Log("Lançamento iniciado!");
-            
             _isCharging = false;
             _isLaunched = true;
             _pressAction.Disable();
+
+            if (_powerSlider != null)
+                _powerSlider.SetVisible(false);
 
             _rb.isKinematic = false; 
             
@@ -133,7 +151,6 @@ namespace Project.Runtime
             direction.Normalize();
 
             var velocity = CalculateLaunchVelocity(direction, targetDistance, targetHeight);
-            
             _rb.linearVelocity = velocity;
 
             StartCoroutine(RespawnRoutine());
@@ -163,12 +180,7 @@ namespace Project.Runtime
             _isLaunched = false;
             _rb.isKinematic = true;
             
-            #if UNITY_6000_0_OR_NEWER
             _rb.linearVelocity = Vector3.zero;
-            #else
-            _rb.velocity = Vector3.zero;
-            #endif
-            
             _rb.angularVelocity = Vector3.zero;
 
             transform.localPosition = _initialLocalPosition;
